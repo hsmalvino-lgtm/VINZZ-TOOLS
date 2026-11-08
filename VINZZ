@@ -1,0 +1,132 @@
+#!/bin/bash
+
+# ========================================================
+# GANTI API KEY GROQ DI BAWAH INI (YANG DIAWALI gsk_)
+# ========================================================
+API_KEY="MASUKIN_API_KEY_GROQ_LO_DI_SINI"
+# ========================================================
+
+GREEN='\033[92m'
+BLUE='\033[96m'
+YELLOW='\033[93m'
+RED='\033[91m'
+GRAY='\033[90m'
+NC='\033[0m'
+
+# ================== FITUR CODEX ==================
+fungsi_codex() {
+    clear
+    echo -e "${BLUE}--- VINZz CODEX ---${NC}"
+    echo -e "Ketik ${YELLOW}'exit'${NC} buat balik."
+    echo -e "Contoh: ${GRAY}'buatin script python buat scan port'${NC}\n"
+
+    while true; do
+        read -p "$(echo -e "${GREEN}Prompt: ${NC}")" user_input
+        if [ "$user_input" = "exit" ] || [ "$user_input" = "quit" ]; then break; fi
+        if [ -z "$user_input" ]; then continue; fi
+
+        echo -e "${GRAY}(Codex sedang nulis kode...)${NC}"
+
+        safe_input=$(echo "$user_input" | sed 's/"/\\"/g')
+        JSON_PAYLOAD=$(cat <<EOF
+{
+    "model": "openai/gpt-oss-120b",
+    "messages": [
+        {"role": "system", "content": "Kamu adalah VINZz Codex. Lo asisten coding jenius. Kasih jawaban dalam format MARKDOWN. Kalo diminta bikin script, kasih KODE UTUH tanpa terpotong, tanpa penjelasan panjang lebar, langsung to the point."},
+        {"role": "user", "content": "$safe_input"}
+    ]
+}
+EOF
+)
+
+        RESPONSE=$(curl -s -X POST "https://api.groq.com/openai/v1/chat/completions" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD")
+
+        ERROR_MSG=$(echo "$RESPONSE" | jq -r '.error.message // empty')
+
+        if [ -n "$ERROR_MSG" ]; then
+            echo -e "${RED}[Error API] $ERROR_MSG${NC}\n"
+        else
+            AI_REPLY=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
+            echo -e "${BLUE}Codex:${NC}\n$AI_REPLY\n"
+            
+            read -p "Simpan jawaban ke file? (y/n): " save_choice
+            if [ "$save_choice" = "y" ]; then
+                read -p "Nama file (contoh: script.py): " filename
+                echo -e "$AI_REPLY" > "$filename"
+                echo -e "${GREEN}✓ Kode disimpan di $filename${NC}\n"
+            fi
+            echo -e "${GRAY}--------------------------------------------------${NC}\n"
+        fi
+    done
+}
+
+# ================== FITUR AI CHAT ==================
+fungsi_ai() {
+    clear
+    echo -e "${BLUE}--- VINZz AI ---${NC}"
+    echo -e "Ketik ${YELLOW}'exit'${NC} buat balik.\n"
+    while true; do
+        read -p "$(echo -e "${GREEN}Lu: ${NC}")" user_input
+        
+        if [ "$user_input" = "exit" ] || [ "$user_input" = "quit" ]; then break; fi
+        if [ -z "$user_input" ]; then continue; fi
+        
+        echo -e "${GRAY}(Vinzz sedang mikir...)${NC}"
+        
+        safe_input=$(echo "$user_input" | sed 's/"/\\"/g')
+        JSON_PAYLOAD=$(cat <<EOF
+{
+    "model": "openai/gpt-oss-120b",
+    "messages": [
+        {"role": "system", "content": "Kamu adalah Vinzz AI. Asisten hacker/developer yang pake bahasa gaul Indonesia (lu/gue). Lo jago coding, cerdas, dan jawabannya to the point."},
+        {"role": "user", "content": "$safe_input"}
+    ]
+}
+EOF
+)
+
+        RESPONSE=$(curl -s -X POST "https://api.groq.com/openai/v1/chat/completions" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD")
+
+        ERROR_MSG=$(echo "$RESPONSE" | jq -r '.error.message // empty')
+
+        if [ -n "$ERROR_MSG" ]; then
+            echo -e "${RED}[Error API] $ERROR_MSG${NC}\n"
+        else
+            AI_REPLY=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
+            echo -e "${BLUE}Vinzz AI:${NC} $AI_REPLY\n"
+        fi
+    done
+}
+
+# ================== MENU UTAMA ==================
+while true; do
+    clear
+    echo -e "${GREEN}========================================${NC}"
+    echo -e "${BLUE}        ██╗   ██╗██╗███╗   ██╗███████╗${NC}"
+    echo -e "${BLUE}        ██║   ██║██║████╗  ██║╚══███╔╝${NC}"
+    echo -e "${BLUE}        ██║   ██║██║██╔██╗ ██║  ███╔╝ ${NC}"
+    echo -e "${BLUE}        ╚██╗ ██╔╝██║██║╚██╗██║ ███╔╝  ${NC}"
+    echo -e "${BLUE}         ╚████╔╝ ██║██║ ╚████║███████╗${NC}"
+    echo -e "${BLUE}          ╚═══╝  ╚═╝╚═╝  ╚═══╝╚══════╝${NC}"
+    echo -e "${GREEN}========================================${NC}"
+    echo -e "${YELLOW}           VINZz MULTI-TOOL             ${NC}"
+    echo -e "${GREEN}========================================${NC}"
+    echo "1. VINZz Codex (Bikin Script/Kode)"
+    echo "2. Vinzz AI (Chat Santai)"
+    echo "3. Keluar"
+    echo -e "${GREEN}========================================${NC}"
+    read -p "Pilih menu (1-3): " menu
+
+    case $menu in
+        1) fungsi_codex ;;
+        2) fungsi_ai ;;
+        3) echo -e "\n${GREEN}Makasih udah pake VINZz. Stay safe!${NC}\n"; exit 0 ;;
+        *) echo -e "\n${RED}Pilihan ga valid!${NC}"; sleep 1 ;;
+    esac
+done
